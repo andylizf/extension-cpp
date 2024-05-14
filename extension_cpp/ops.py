@@ -1,6 +1,9 @@
 from typing import Tuple
+
 import torch
 from torch import Tensor
+
+from ._C import lltm_backward, lltm_forward  # type: ignore
 
 __all__ = ["lltm", "reference_lltm"]
 
@@ -14,7 +17,7 @@ def lltm(
 class LLTMFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weights, bias, old_h, old_cell):
-        outputs = torch.ops.extension_cpp.lltm_forward.default(
+        outputs = lltm_forward(
             input, weights, bias, old_h, old_cell
         )
         new_h, new_cell = outputs[:2]
@@ -32,7 +35,7 @@ class LLTMFunction(torch.autograd.Function):
             d_weights,
             d_bias,
             d_old_cell,
-        ) = torch.ops.extension_cpp.lltm_backward.default(
+        ) = lltm_backward(
             grad_h, grad_cell, *ctx.saved_tensors
         )
         return d_input, d_weights, d_bias, d_old_h, d_old_cell
